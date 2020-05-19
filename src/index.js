@@ -5,7 +5,12 @@ import store from './store'
 import Cropper from './Cropper';
 import * as serviceWorker from './serviceWorker';
 
+import 'colors.css/css/colors.css'
 import 'basscss/css/basscss-cp.css'
+import 'basscss-forms/index.css'
+import 'basscss-btn/css/btn.css'
+import 'basscss-btn-primary/css/btn-primary.css'
+import 'basscss-btn-outline/css/btn-outline.css'
 import './index.css'
 
 ReactDOM.render(

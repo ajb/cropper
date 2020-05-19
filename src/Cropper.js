@@ -31,7 +31,7 @@ export default function Cropper() {
 
   // Render steps
   return (
-    <div>
+    <div className='p2'>
       {state.step === 'uploadImage' && <UploadImage />}
       {state.step === 'drawGrid' && <DrawGrid />}
       {state.step === 'imageReview' && <ImageReview />}

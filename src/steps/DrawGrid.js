@@ -1,15 +1,15 @@
-import React, { Fragment, useEffect, useCallback, useRef } from 'react'
+import React, { Fragment, useState, useEffect, useCallback, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Stage, Layer, Image, Line, Rect } from 'react-konva'
 import useImage from 'use-image'
 import cuid from 'cuid'
 import { map, flatten, maxBy, values } from 'lodash'
 import { FlexContainer, LeftColumn, RightColumn } from '../layout'
-import { getIntersectionName } from '../utilities'
 import { calculateIntersections } from '../reducers/cropper'
 
 export default function DrawGrid() {
   const state = useSelector(s => s.cropper)
+  const [hoveringLine, setHoveringLine] = useState(false)
   const dispatch = useDispatch()
   const [konvaImage] = useImage(state.image.base64)
   const stageContainer = useRef()
@@ -42,6 +42,9 @@ export default function DrawGrid() {
       }
 
       // Other keys:
+      if (e.target.nodeName === 'INPUT') return;
+      if (e.metaKey) return;
+
       if (e.code === 'KeyN') dispatch({type: 'cropper/setClickToDrawLine', payload: true});
       if (e.code === 'KeyR') removeLast();
     }
@@ -72,6 +75,20 @@ export default function DrawGrid() {
     window.addEventListener('resize', calculateScale)
     return () => { window.removeEventListener('resize', calculateScale) }
   }, [dispatch, state.image.width, state.image.height])
+
+  useEffect(() => {
+    if (state.clickToDrawLine || state.drawingLineId) {
+      setCursor('crosshair')
+    } else if (hoveringLine) {
+      setCursor('pointer')
+    } else {
+      setCursor('default')
+    }
+  }, [state.clickToDrawLine, state.drawingLineId, hoveringLine])
+
+  function setCursor(val) {
+    stageContainer.current.style.cursor = val
+  }
 
   function handleLineClick(line) {
     dispatch({
@@ -186,30 +203,43 @@ export default function DrawGrid() {
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
-        <div>
+        <div className='background-light-gray p2'>
           <button
+            className='btn btn-small btn-secondary'
             disabled={state.clickToDrawLine}
             onClick={() => dispatch({type: 'cropper/setClickToDrawLine', payload: true})}
           ><u>N</u>ew line</button>
 
-          <button onClick={removeLast}><u>R</u>emove last</button>
+          &nbsp;
+
+          <button
+            className='btn btn-small btn-secondary'
+            onClick={removeLast}><u>R</u>emove last</button>
         </div>
 
-        <hr />
+        <div className='py2'>
+          {
+            state.drawingLineId ?
+              <p className='h3 gray'>Drawing...</p> :
+              (
+                state.clickToDrawLine ?
+                  <p className='h3 gray'>Click to draw line</p> :
+                  (
+                    state.sidebarLineId && state.lines[state.sidebarLineId] ?
+                      <SidebarLine /> :
+                      <SidebarAllLines />
+                  )
+              )
+          }
+        </div>
 
-        {
-          state.drawingLineId ?
-            'Drawing...' :
-            (
-              state.sidebarLineId && state.lines[state.sidebarLineId] ?
-                <SidebarLine /> :
-                <SidebarAllLines />
-            )
-        }
+        <div className='background-light-gray p2'>
+          <button className='btn btn-primary' onClick={nextStep}>Next step</button>
 
-        <hr />
-        <button onClick={() => window.location.reload()}>Start over</button>
-        <button onClick={nextStep}>Next step</button>
+          <div className='h6 pt1'>
+            <span className='link' onClick={() => window.location.reload()}>or start over</span>
+          </div>
+        </div>
       </LeftColumn>
       <RightColumn>
         <div ref={stageContainer}>
@@ -231,13 +261,26 @@ export default function DrawGrid() {
                 if (line.points.length === 0) return null;
 
                 return (
-                  <Line
-                    key={id}
-                    points={flatten(line.points)}
-                    stroke={id === state.sidebarLineId ? 'blue' : 'red'}
-                    strokeWidth={3 / state.scale}
-                    onClick={() => handleLineClick(line)}
-                  />
+                  <Fragment key={id}>
+                    <Line
+                      points={flatten(line.points)}
+                      stroke={id === state.sidebarLineId ? 'blue' : 'red'}
+                      strokeWidth={3 / state.scale}
+                      onClick={() => handleLineClick(line)}
+                      onMouseenter={() => setHoveringLine(true)}
+                      onMouseleave={() => setHoveringLine(false)}
+                    />
+
+                    <Line
+                      points={flatten(line.points)}
+                      stroke={'black'}
+                      opacity={0}
+                      strokeWidth={20 / state.scale}
+                      onClick={() => handleLineClick(line)}
+                      onMouseenter={() => setHoveringLine(true)}
+                      onMouseleave={() => setHoveringLine(false)}
+                    />
+                  </Fragment>
                 )
               })}
 
@@ -277,18 +320,25 @@ function SidebarLine() {
 
   return (
     <Fragment>
-      <span onClick={() => {dispatch({type: 'cropper/closeSidebar'})}} className='link'>Back</span>
-      <h4>Name this line...</h4>
-
       <form onSubmit={(e) => { e.preventDefault(); save();} }>
+        <label className='label'>Line name</label>
         <input
+          className='input'
           type='text'
           ref={nameInput}
           value={line.name || ''}
           onChange={(e) => dispatch({type: 'cropper/setLineName', meta: { lineId: line.id }, payload: e.target.value})}
         />
 
-        <button type='submit'>Save</button>
+        <button className='btn btn-small btn-primary'>Save</button>
+        <div className='pt2'>
+          <span
+            className='link h6'
+            onClick={() => {
+              dispatch({type: 'cropper/removeLine', payload: line.id})
+            }}
+          >Delete line</span>
+        </div>
       </form>
     </Fragment>
   )
@@ -307,17 +357,10 @@ function SidebarAllLines() {
 
   return (
     <Fragment>
-      <h4>Lines</h4>
+      <h4 className='my0'>Lines</h4>
       <ul>
         {map(state.lines, (line, id) => {
           return <li key={id}><span className='link' onClick={() => editLine(id)}>{line.name || 'Unnamed line'}</span></li>
-        })}
-      </ul>
-
-      <h4>Intersections</h4>
-      <ul>
-        {map(state.intersections, (i) => {
-          return <li key={i.location}>[{i.location[0]}, {i.location[1]}]: {getIntersectionName(state.lines, i.lineIds)}</li>
         })}
       </ul>
     </Fragment>

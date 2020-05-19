@@ -35,3 +35,18 @@ a.btn-primary {
 a.btn-secondary {
   color: #fff;
 }
+
+.btn-small {
+  font-size: .75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.background-light-gray {
+  background: #ddd;
+}
+
+@media (min-width: 64em) {
+  .lg-pr3 {
+    padding-right: var(--space-3);
+  }
+}
