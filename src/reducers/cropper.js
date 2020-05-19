@@ -14,7 +14,7 @@ const initialState = {
   lines: {},
   intersections: [],
   clickToDrawLine: false,
-  wasDrawing: false,
+  wasDrawingLine: false,
   drawingLineId: null,
   sidebarLineId: null,
   imageReview: {
@@ -141,12 +141,12 @@ export default function cropper(state = initialState, action) {
       // Edit in sidebar:
       draft.sidebarLineId = action.meta.lineId
 
-      // Set "wasDrawing" so we can add another
-      draft.wasDrawing = true
+      // Set "wasDrawingLine" so we can add another
+      draft.wasDrawingLine = true
       return draft
 
       case 'cropper/drawAnother':
-      draft.wasDrawing = false
+      draft.wasDrawingLine = false
       draft.clickToDrawLine = true
       return draft
 

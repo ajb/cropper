@@ -314,7 +314,7 @@ function SidebarLine() {
   function save() {
     dispatch({type: 'cropper/closeSidebar'})
 
-    if (state.wasDrawing) {
+    if (state.wasDrawingLine) {
       dispatch({type: 'cropper/drawAnother'})
     }
   }
