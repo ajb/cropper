@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Helvetica,sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  color: #111;
+  background-color: #fff;
+  background: #efefef;
+}
+
+a, a:visited, .link {
+  color: #0074D9;
+}
+
+.link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+a.btn-primary {
+  color: #fff;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.btn-secondary {
+  color: #fff;
+  background-color: #aaa;
+  border-radius: 3px;
+}
+
+a.btn-secondary {
+  color: #fff;
+}
