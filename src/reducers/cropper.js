@@ -1,7 +1,7 @@
 import { produce } from 'immer'
 import { map, each, values } from 'lodash'
 import { intersect } from 'mathjs'
-import { nextNameInSequence } from '../utilities'
+import { nextNameInSequence, sortAlphabetically } from '../utilities'
 
 const initialState = {
   step: 'uploadImage', // drawGrid, imageReview, etc...
@@ -26,11 +26,12 @@ const initialState = {
 
 export function calculateIntersections() {
   return (dispatch, getState) => {
-    const allLines = values(getState().cropper.lines).slice()
+    const allLines = sortAlphabetically(values(getState().cropper.lines).slice(), 'name')
+
     const intersections = []
 
     while(allLines.length) {
-      let checkingLine = allLines.pop();
+      let checkingLine = allLines.shift()
 
       each(allLines, (otherLine) => {
         let res = intersect(

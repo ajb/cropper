@@ -38,3 +38,19 @@ export function nextNameInSequence(type, allNames) {
     throw new Error('type not recognized')
   }
 }
+
+export function sortAlphabetically(arr, iteratee) {
+  let collator = new Intl.Collator(
+    undefined, {
+      numeric: true,
+      sensitivity: 'base'
+    }
+  )
+
+  return arr.sort((a, b) => {
+    return collator.compare(
+      typeof iteratee === 'string' ? a[iteratee] : iteratee(a),
+      typeof iteratee === 'string' ? b[iteratee] : iteratee(b)
+    )
+  })
+}
