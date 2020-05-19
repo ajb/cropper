@@ -1,6 +1,7 @@
 import { produce } from 'immer'
-import { each, values } from 'lodash'
+import { map, each, values } from 'lodash'
 import { intersect } from 'mathjs'
+import { nextNameInSequence } from '../utilities'
 
 const initialState = {
   step: 'uploadImage', // drawGrid, imageReview, etc...
@@ -124,6 +125,14 @@ export default function cropper(state = initialState, action) {
       return draft
 
       case 'cropper/finishLine':
+      // I don't know what this is, but it doesn't matter lol
+      let maybeSlope = (
+        action.payload.points[1][1] - action.payload.points[0][1]) /
+        (action.payload.points[1][0] - action.payload.points[0][0]
+      )
+
+      draft.lines[action.meta.lineId].name = nextNameInSequence(Math.abs(maybeSlope) > 1 ? 'alphabetical' : 'numeric', map(state.lines, 'name'))
+
       // Replace points:
       draft.lines[action.meta.lineId].points = action.payload.points
 
