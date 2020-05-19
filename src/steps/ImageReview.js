@@ -61,6 +61,13 @@ export default function ImageReview() {
     return () => { document.removeEventListener('keydown', handleKeyPress) }
   }, [hold, notHold])
 
+  function previousStep() {
+    dispatch({
+      type: 'cropper/setStep',
+      payload: 'drawGrid'
+    })
+  }
+
   function finish() {
     let holdIntersections = filter(state.intersections, (i) => i.review)
     let imageFiles = []
@@ -137,6 +144,7 @@ export default function ImageReview() {
         </div>
 
         <div className='pt4'>
+          <button onClick={previousStep}>Back</button>
           <button onClick={finish}>Finish</button>
         </div>
       </LeftColumn>

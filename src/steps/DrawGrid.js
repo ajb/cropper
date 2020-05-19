@@ -1,12 +1,12 @@
-import React, { Fragment, useEffect, useRef } from 'react'
+import React, { Fragment, useEffect, useCallback, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Stage, Layer, Image, Line, Rect } from 'react-konva'
 import useImage from 'use-image'
 import cuid from 'cuid'
-import { each, map, flatten, maxBy, values } from 'lodash'
-import { intersect } from 'mathjs'
+import { map, flatten, maxBy, values } from 'lodash'
 import { FlexContainer, LeftColumn, RightColumn } from '../layout'
 import { getIntersectionName } from '../utilities'
+import { calculateIntersections } from '../reducers/cropper'
 
 export default function DrawGrid() {
   const state = useSelector(s => s.cropper)
@@ -14,8 +14,16 @@ export default function DrawGrid() {
   const [konvaImage] = useImage(state.image.base64)
   const stageContainer = useRef()
 
+  const removeLast = useCallback(() => {
+    let removeLine = maxBy(values(state.lines), 'added')
+    let removeId = removeLine && removeLine.id
+    if (removeId) dispatch({type: 'cropper/removeLine', payload: removeId});
+  }, [dispatch, state.lines])
+
+  // Keyboard shortcuts
   useEffect(() => {
     function handleKeyPress(e) {
+      // Escape key exits from many actions...
       if (e.code === 'Escape') {
         if (state.drawingLineId) {
           dispatch({
@@ -33,17 +41,14 @@ export default function DrawGrid() {
         dispatch({type: 'cropper/setClickToDrawLine', payload: false})
       }
 
-      if (e.code === 'KeyN') {
-        dispatch({
-          type: 'cropper/setClickToDrawLine',
-          payload: true
-        })
-      }
+      // Other keys:
+      if (e.code === 'KeyN') dispatch({type: 'cropper/setClickToDrawLine', payload: true});
+      if (e.code === 'KeyR') removeLast();
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => { document.removeEventListener('keydown', handleKeyPress) }
-  }, [dispatch, state.drawingLineId, state.sidebarLineId])
+  }, [dispatch, removeLast, state.drawingLineId, state.sidebarLineId])
 
   useEffect(() => {
     function calculateScale() {
@@ -73,60 +78,6 @@ export default function DrawGrid() {
       type: 'cropper/editLineInSidebar',
       meta: { lineId: line.id }
     })
-  }
-
-  function calculateIntersections() {
-    const allLines = values(state.lines).slice()
-    const intersections = []
-
-    while(allLines.length) {
-      let checkingLine = allLines.pop();
-
-      each(allLines, (otherLine) => {
-        let res = intersect(
-          [
-            checkingLine.points[0][0],
-            checkingLine.points[0][1]
-          ],
-          [
-            checkingLine.points[1][0],
-            checkingLine.points[1][1]
-          ],
-          [
-            otherLine.points[0][0],
-            otherLine.points[0][1]
-          ],
-          [
-            otherLine.points[1][0],
-            otherLine.points[1][1]
-          ]
-        )
-
-        if (
-          res &&
-          res[0] < state.image.width &&
-          res[1] < state.image.height &&
-          res[0] > 0 &&
-          res[1] > 0
-        ) {
-          intersections.push({
-            location: [Math.round(res[0]), Math.round(res[1])],
-            lineIds: [checkingLine.id, otherLine.id]
-          })
-        }
-      })
-    }
-
-    dispatch({
-      type: 'cropper/setIntersections',
-      payload: intersections
-    })
-  }
-
-  function removeLast() {
-    let removeLine = maxBy(values(state.lines), 'added')
-    let removeId = removeLine && removeLine.id
-    if (removeId) dispatch({type: 'cropper/removeLine', payload: removeId});
   }
 
   function createLine(startX, startY) {
@@ -223,11 +174,12 @@ export default function DrawGrid() {
     })
   }
 
-  function doneDrawing() {
-    // do something with the intersections...
-    dispatch({
-      type: 'cropper/setStep',
-      payload: 'imageReview'
+  function nextStep() {
+    dispatch(calculateIntersections()).then(() => {
+      dispatch({
+        type: 'cropper/setStep',
+        payload: 'imageReview'
+      })
     })
   }
 
@@ -235,19 +187,15 @@ export default function DrawGrid() {
     <FlexContainer>
       <LeftColumn sticky={true}>
         <div>
-          {
-            state.clickToDrawLine ?
-              <button disabled>Click image to draw new line</button> :
-              <button onClick={() => dispatch({type: 'cropper/setClickToDrawLine', payload: true})}><u>N</u>ew line</button>
-          }
-
-          <button onClick={removeLast}>removeLast</button>
-          <button onClick={calculateIntersections}>calculateIntersections</button>
           <button
-            onClick={doneDrawing}
-            disabled={state.intersections.length === 0}
-          >doneDrawing</button>
+            disabled={state.clickToDrawLine}
+            onClick={() => dispatch({type: 'cropper/setClickToDrawLine', payload: true})}
+          ><u>N</u>ew line</button>
+
+          <button onClick={removeLast}><u>R</u>emove last</button>
         </div>
+
+        <hr />
 
         {
           state.drawingLineId ?
@@ -258,6 +206,10 @@ export default function DrawGrid() {
                 <SidebarAllLines />
             )
         }
+
+        <hr />
+        <button onClick={() => window.location.reload()}>Start over</button>
+        <button onClick={nextStep}>Next step</button>
       </LeftColumn>
       <RightColumn>
         <div ref={stageContainer}>

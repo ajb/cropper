@@ -1,4 +1,6 @@
 import { produce } from 'immer'
+import { each, values } from 'lodash'
+import { intersect } from 'mathjs'
 
 const initialState = {
   step: 'uploadImage', // drawGrid, imageReview, etc...
@@ -18,6 +20,59 @@ const initialState = {
   }
 }
 
+// Action Creators:
+
+export function calculateIntersections() {
+  return (dispatch, getState) => {
+    const allLines = values(getState().cropper.lines).slice()
+    const intersections = []
+
+    while(allLines.length) {
+      let checkingLine = allLines.pop();
+
+      each(allLines, (otherLine) => {
+        let res = intersect(
+          [
+            checkingLine.points[0][0],
+            checkingLine.points[0][1]
+          ],
+          [
+            checkingLine.points[1][0],
+            checkingLine.points[1][1]
+          ],
+          [
+            otherLine.points[0][0],
+            otherLine.points[0][1]
+          ],
+          [
+            otherLine.points[1][0],
+            otherLine.points[1][1]
+          ]
+        )
+
+        if (
+          res &&
+          res[0] < getState().cropper.image.width &&
+          res[1] < getState().cropper.image.height &&
+          res[0] > 0 &&
+          res[1] > 0
+        ) {
+          intersections.push({
+            location: [Math.round(res[0]), Math.round(res[1])],
+            lineIds: [checkingLine.id, otherLine.id]
+          })
+        }
+      })
+    }
+
+    dispatch({
+      type: 'cropper/setIntersections',
+      payload: intersections
+    })
+
+    return Promise.resolve()
+  }
+}
 
 // Reducer:
 
