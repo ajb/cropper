@@ -1,0 +1,1 @@
+export const DEFAULT_HOLD_IMAGE_SIZE = 200
