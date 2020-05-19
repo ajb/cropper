@@ -84,6 +84,7 @@ export default function cropper(state = initialState, action) {
       case 'cropper/returnToDrawGrid':
       draft.step = 'drawGrid'
       draft.intersections = initialState.intersections
+      draft.imageReview = initialState.imageReview
       return draft
 
       case 'cropper/restoreState':
