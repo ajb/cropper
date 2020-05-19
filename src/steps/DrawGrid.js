@@ -180,14 +180,11 @@ export default function DrawGrid() {
     }
 
     dispatch({
-      type: 'cropper/replaceLinePoints',
+      type: 'cropper/finishLine',
       meta: { lineId },
-      payload: [newStart, newFinish]
-    })
-
-    dispatch({
-      type: 'cropper/editLineInSidebar',
-      meta: { lineId }
+      payload: {
+        points: [newStart, newFinish]
+      }
     })
   }
 
@@ -316,11 +313,20 @@ function SidebarLine() {
 
   function save() {
     dispatch({type: 'cropper/closeSidebar'})
+
+    if (state.wasDrawing) {
+      dispatch({type: 'cropper/drawAnother'})
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    save()
   }
 
   return (
     <Fragment>
-      <form onSubmit={(e) => { e.preventDefault(); save();} }>
+      <form onSubmit={handleSubmit}>
         <label className='label'>Line name</label>
         <input
           className='input'

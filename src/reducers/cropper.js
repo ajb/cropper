@@ -13,6 +13,7 @@ const initialState = {
   lines: {},
   intersections: [],
   clickToDrawLine: false,
+  wasDrawing: false,
   drawingLineId: null,
   sidebarLineId: null,
   imageReview: {
@@ -122,8 +123,20 @@ export default function cropper(state = initialState, action) {
       ]
       return draft
 
-      case 'cropper/replaceLinePoints':
-      draft.lines[action.meta.lineId].points = action.payload
+      case 'cropper/finishLine':
+      // Replace points:
+      draft.lines[action.meta.lineId].points = action.payload.points
+
+      // Edit in sidebar:
+      draft.sidebarLineId = action.meta.lineId
+
+      // Set "wasDrawing" so we can add another
+      draft.wasDrawing = true
+      return draft
+
+      case 'cropper/drawAnother':
+      draft.wasDrawing = false
+      draft.clickToDrawLine = true
       return draft
 
       case 'cropper/loadImage':
