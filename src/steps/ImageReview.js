@@ -62,10 +62,8 @@ export default function ImageReview() {
   }, [hold, notHold])
 
   function previousStep() {
-    dispatch({
-      type: 'cropper/setStep',
-      payload: 'drawGrid'
-    })
+    if (!window.confirm('Are you sure? You will lose your data from this review step.')) return;
+    dispatch({type: 'cropper/returnToDrawGrid'})
   }
 
   function finish() {

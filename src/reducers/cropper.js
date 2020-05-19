@@ -79,6 +79,11 @@ export function calculateIntersections() {
 export default function cropper(state = initialState, action) {
   return produce(state, (draft) => {
     switch (action.type) {
+      case 'cropper/returnToDrawGrid':
+      draft.step = 'drawGrid'
+      draft.intersections = initialState.intersections
+      return draft
+
       case 'cropper/restoreState':
       return action.payload
 
