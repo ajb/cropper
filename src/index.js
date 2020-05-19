@@ -6,6 +6,7 @@ import Cropper from './Cropper';
 import * as serviceWorker from './serviceWorker';
 
 import 'basscss/css/basscss-cp.css'
+import './index.css'
 
 ReactDOM.render(
   <React.StrictMode>
