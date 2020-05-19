@@ -261,8 +261,8 @@ export default function DrawGrid() {
                   <Fragment key={id}>
                     <Line
                       points={flatten(line.points)}
-                      stroke={id === state.sidebarLineId ? 'blue' : 'red'}
-                      strokeWidth={3 / state.scale}
+                      stroke={'red'}
+                      strokeWidth={2 / state.scale}
                       onClick={() => handleLineClick(line)}
                       onMouseenter={() => setHoveringLine(true)}
                       onMouseleave={() => setHoveringLine(false)}
@@ -271,7 +271,7 @@ export default function DrawGrid() {
                     <Line
                       points={flatten(line.points)}
                       stroke={'black'}
-                      opacity={0}
+                      opacity={id === state.sidebarLineId ? 0.3 : 0}
                       strokeWidth={20 / state.scale}
                       onClick={() => handleLineClick(line)}
                       onMouseenter={() => setHoveringLine(true)}
