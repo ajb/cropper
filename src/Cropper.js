@@ -4,7 +4,7 @@ import UploadImage from './steps/UploadImage'
 import DrawGrid from './steps/DrawGrid'
 import ImageReview from './steps/ImageReview'
 
-const localstorageKey = process.env.REACT_APP_STATE_KEY
+const localstorageKey = process.env.NODE_ENV !== 'production' && process.env.REACT_APP_STATE_KEY
 
 export default function Cropper() {
   const state = useSelector(s => s.cropper)
