@@ -54,7 +54,7 @@ export default function DrawGrid() {
 
     document.addEventListener('keydown', handleKeyPress)
     return () => { document.removeEventListener('keydown', handleKeyPress) }
-  }, [dispatch, state.drawingLineId, state.drawingRectId, state.sidebarLineId])
+  }, [dispatch, state.drawingLineId, state.drawingRectId, state.sidebarLineId, state.sidebarRectId])
 
   useEffect(() => {
     function calculateScale() {
