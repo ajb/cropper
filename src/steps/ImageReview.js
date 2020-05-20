@@ -91,7 +91,7 @@ export default function ImageReview() {
       stage.add(layer)
 
       imageFiles.push({
-        name: getIntersectionName(state.lines, i),
+        name: getIntersectionName(state.lines, state.rects, i),
         data: stage.toDataURL()
       })
     })
@@ -139,7 +139,7 @@ export default function ImageReview() {
 
         <div>
           <div>Location: [{activeIntersection.location.join(',')}]</div>
-          <div>Name: {getIntersectionName(state.lines, activeIntersection)}</div>
+          <div>Name: {getIntersectionName(state.lines, state.rects, activeIntersection)}</div>
           <div>Set as: {activeIntersection.review ? 'Hold' : 'Not hold'}</div>
           <div>Size: {imageSize}</div>
         </div>

@@ -1,8 +1,8 @@
 import { map, filter } from 'lodash'
 
-export function getIntersectionName(lines, intersection) {
+export function getIntersectionName(lines, rects, intersection) {
   if (intersection.rectId) {
-    return `rect-${intersection.location[0]},${intersection.location[1]}`
+    return `rect-${rects[intersection.rectId].name}`
   }
 
   let names = map(intersection.lineIds, (id) => lines[id].name)

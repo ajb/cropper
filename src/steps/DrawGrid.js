@@ -426,32 +426,47 @@ function SidebarRect() {
   const state = useSelector(s => s.cropper)
   const dispatch = useDispatch()
   const rect = state.rects[state.sidebarRectId]
+  const nameInput = useRef()
 
+  function handleSubmit(e) {
+    e.preventDefault()
+    save()
+  }
+
+  useEffect(() => {
+    nameInput.current && nameInput.current.focus()
+  }, [nameInput])
 
   function save() {
     dispatch({type: 'cropper/closeSidebar'})
+
+    if (state.wasDrawing) {
+      dispatch({type: 'cropper/drawAnother'})
+    }
   }
 
   return (
     <Fragment>
-      <label className='label'>Rect ID</label>
-      <input
-        className='input'
-        readonly
-        disabled
-        type='text'
-        value={rect.id}
-      />
+      <form onSubmit={handleSubmit}>
+        <label className='label'>Rect name</label>
+        <input
+          className='input'
+          type='text'
+          ref={nameInput}
+          value={rect.name || ''}
+          onChange={(e) => dispatch({type: 'cropper/setRectName', meta: { rectId: rect.id }, payload: e.target.value})}
+        />
 
-      <button className='btn btn-small btn-primary' onClick={save}>Save</button>
-      <div className='pt2'>
-        <span
-          className='link h6'
-          onClick={() => {
-            dispatch({type: 'cropper/removeRect', payload: rect.id})
-          }}
-        >Delete rect</span>
-      </div>
+        <button className='btn btn-small btn-primary'>Save</button>
+        <div className='pt2'>
+          <span
+            className='link h6'
+            onClick={() => {
+              dispatch({type: 'cropper/removeRect', payload: rect.id})
+            }}
+          >Delete rect</span>
+        </div>
+      </form>
     </Fragment>
   )
 }

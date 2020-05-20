@@ -221,9 +221,11 @@ export default function cropper(state = initialState, action) {
       return draft
 
       case 'cropper/finishRect':
-      // Click to draw another immediately
+      // Edit in sidebar:
+      draft.sidebarRectId = action.meta.rectId
 
-      draft.clickToDraw = 'rect'
+      // Set "wasDrawing" so we can add another
+      draft.wasDrawing = 'rect'
       return draft
 
       case 'cropper/drawAnother':
@@ -254,6 +256,10 @@ export default function cropper(state = initialState, action) {
 
       case 'cropper/setLineName':
       draft.lines[action.meta.lineId].name = action.payload
+      return draft
+
+      case 'cropper/setRectName':
+      draft.rects[action.meta.rectId].name = action.payload
       return draft
 
       case 'cropper/reviewImage':
