@@ -7,7 +7,7 @@ import { filter, each } from 'lodash'
 import { FlexContainer, LeftColumn, RightColumn } from '../layout'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { DEFAULT_HOLD_IMAGE_SIZE } from '../constants'
+import { DEFAULT_HOLD_IMAGE_SIZE, REVIEW_STAGE_SIZE } from '../constants'
 import { getIntersectionName } from '../utilities'
 
 export default function ImageReview() {
@@ -15,16 +15,15 @@ export default function ImageReview() {
   let dispatch = useDispatch()
   let imageReviewState = useSelector(s => s.cropper.imageReview)
   const [konvaImage] = useImage(state.image.base64)
-  const activeIntersection = state.intersections[imageReviewState.reviewingIdx]
+  const activeIntersection = state.intersections && state.intersections[imageReviewState.reviewingIdx]
   const previousIntersection = state.intersections[imageReviewState.reviewingIdx - 1]
-  const stageSize = 400
   const imageSize = (
-    activeIntersection.size ||
+    (activeIntersection && activeIntersection.size) ||
     (previousIntersection && previousIntersection.size) ||
     DEFAULT_HOLD_IMAGE_SIZE
   )
 
-  const hold = useCallback(() => {
+  const logHold = useCallback(() => {
     dispatch({type: 'cropper/reviewChangeSize', payload: imageSize})
 
     dispatch({
@@ -35,7 +34,7 @@ export default function ImageReview() {
     dispatch({type: 'cropper/reviewNext'})
   }, [dispatch, imageSize])
 
-  const notHold = useCallback(() => {
+  const logNotHold = useCallback(() => {
     dispatch({type: 'cropper/reviewChangeSize', payload: imageSize})
 
     dispatch({
@@ -49,17 +48,17 @@ export default function ImageReview() {
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === 'KeyH') {
-        hold()
+        logHold()
       }
 
       if (e.code === 'KeyN') {
-        notHold()
+        logNotHold()
       }
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => { document.removeEventListener('keydown', handleKeyPress) }
-  }, [hold, notHold])
+  }, [logHold, logNotHold])
 
   function previousStep() {
     if (!window.confirm('Are you sure? You will lose your data from this review step.')) return;
@@ -92,7 +91,7 @@ export default function ImageReview() {
       stage.add(layer)
 
       imageFiles.push({
-        name: getIntersectionName(state.lines, i.lineIds),
+        name: getIntersectionName(state.lines, i),
         data: stage.toDataURL()
       })
     })
@@ -107,6 +106,10 @@ export default function ImageReview() {
     })
   }
 
+  if (state.intersections.length === 0) {
+    return <NoHolds previousStep={previousStep} />;
+  }
+
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
@@ -119,8 +122,8 @@ export default function ImageReview() {
         Reviewing {imageReviewState.reviewingIdx + 1} of {state.intersections.length}
 
         <div>
-          <button onClick={hold}><u>H</u>old</button>
-          <button onClick={notHold}><u>N</u>ot hold</button>
+          <button onClick={logHold}><u>H</u>old</button>
+          <button onClick={logNotHold}><u>N</u>ot hold</button>
 
           <div>
             <label>Size</label>
@@ -136,7 +139,7 @@ export default function ImageReview() {
 
         <div>
           <div>Location: [{activeIntersection.location.join(',')}]</div>
-          <div>Name: {getIntersectionName(state.lines, activeIntersection.lineIds)}</div>
+          <div>Name: {getIntersectionName(state.lines, activeIntersection)}</div>
           <div>Set as: {activeIntersection.review ? 'Hold' : 'Not hold'}</div>
           <div>Size: {imageSize}</div>
         </div>
@@ -150,19 +153,19 @@ export default function ImageReview() {
         <div id='hiddenStageContainer' style={{display: 'none'}} />
 
         <Stage
-          width={stageSize}
-          height={stageSize}
+          width={REVIEW_STAGE_SIZE}
+          height={REVIEW_STAGE_SIZE}
         >
           <Layer>
             <Image
               image={konvaImage}
-              offsetX={activeIntersection.location[0] - (stageSize / 2)}
-              offsetY={activeIntersection.location[1] - (stageSize / 2)}
+              offsetX={activeIntersection.location[0] - (REVIEW_STAGE_SIZE / 2)}
+              offsetY={activeIntersection.location[1] - (REVIEW_STAGE_SIZE / 2)}
             />
 
             <Rect
-              x={stageSize / 2}
-              y={stageSize / 2}
+              x={REVIEW_STAGE_SIZE / 2}
+              y={REVIEW_STAGE_SIZE / 2}
               offsetX={imageSize / 2}
               offsetY={imageSize / 2}
               width={imageSize}
@@ -172,8 +175,8 @@ export default function ImageReview() {
             />
 
             <Rect
-              x={stageSize / 2}
-              y={stageSize / 2}
+              x={REVIEW_STAGE_SIZE / 2}
+              y={REVIEW_STAGE_SIZE / 2}
               offsetX={3}
               offsetY={3}
               width={6}
@@ -184,5 +187,11 @@ export default function ImageReview() {
         </Stage>
       </RightColumn>
     </FlexContainer>
+  )
+}
+
+export function NoHolds({previousStep}) {
+  return (
+    <p className='h3 gray'>No holds found. <span className='link' onClick={previousStep}>Go back</span></p>
   )
 }

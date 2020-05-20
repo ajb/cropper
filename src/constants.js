@@ -1,1 +1,2 @@
 export const DEFAULT_HOLD_IMAGE_SIZE = 200
+export const REVIEW_STAGE_SIZE = 400

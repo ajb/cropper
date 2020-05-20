@@ -1,24 +1,18 @@
-import React, { Fragment, useState, useEffect, useCallback, useRef } from 'react'
+import React, { Fragment, useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Stage, Layer, Image, Line, Rect } from 'react-konva'
 import useImage from 'use-image'
 import cuid from 'cuid'
-import { map, flatten, maxBy, values } from 'lodash'
+import { map, flatten } from 'lodash'
 import { FlexContainer, LeftColumn, RightColumn } from '../layout'
 import { calculateIntersections } from '../reducers/cropper'
 
 export default function DrawGrid() {
   const state = useSelector(s => s.cropper)
-  const [hoveringLine, setHoveringLine] = useState(false)
+  const [hoveringObject, setHoveringObject] = useState(false)
   const dispatch = useDispatch()
   const [konvaImage] = useImage(state.image.base64)
   const stageContainer = useRef()
-
-  const removeLast = useCallback(() => {
-    let removeLine = maxBy(values(state.lines), 'added')
-    let removeId = removeLine && removeLine.id
-    if (removeId) dispatch({type: 'cropper/removeLine', payload: removeId});
-  }, [dispatch, state.lines])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -34,24 +28,33 @@ export default function DrawGrid() {
           dispatch({type: 'cropper/stopDrawing'})
         }
 
-        if (state.sidebarLineId) {
+        if (state.drawingRectId) {
+          dispatch({
+            type: 'cropper/removeRect',
+            payload: state.drawingRectId
+          })
+
+          dispatch({type: 'cropper/stopDrawing'})
+        }
+
+        if (state.sidebarLineId || state.sidebarRectId) {
           dispatch({type: 'cropper/closeSidebar'})
         }
 
-        dispatch({type: 'cropper/setClickToDrawLine', payload: false})
+        dispatch({type: 'cropper/setClickToDraw', payload: null})
       }
 
       // Other keys:
       if (e.target.nodeName === 'INPUT') return;
       if (e.metaKey) return;
 
-      if (e.code === 'KeyN') dispatch({type: 'cropper/setClickToDrawLine', payload: true});
-      if (e.code === 'KeyR') removeLast();
+      if (e.code === 'KeyL') dispatch({type: 'cropper/setClickToDraw', payload: 'line'});
+      if (e.code === 'KeyR') dispatch({type: 'cropper/setClickToDraw', payload: 'rect'});
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => { document.removeEventListener('keydown', handleKeyPress) }
-  }, [dispatch, removeLast, state.drawingLineId, state.sidebarLineId])
+  }, [dispatch, state.drawingLineId, state.drawingRectId, state.sidebarLineId])
 
   useEffect(() => {
     function calculateScale() {
@@ -77,23 +80,34 @@ export default function DrawGrid() {
   }, [dispatch, state.image.width, state.image.height])
 
   useEffect(() => {
-    if (state.clickToDrawLine || state.drawingLineId) {
+    if (state.clickToDraw || state.drawingLineId || state.drawingRectId) {
       setCursor('crosshair')
-    } else if (hoveringLine) {
+    } else if (hoveringObject) {
       setCursor('pointer')
     } else {
       setCursor('default')
     }
-  }, [state.clickToDrawLine, state.drawingLineId, hoveringLine])
+  }, [state.clickToDraw, state.drawingLineId, state.drawingRectId, hoveringObject])
 
   function setCursor(val) {
     stageContainer.current.style.cursor = val
   }
 
   function handleLineClick(line) {
+    if (state.clickToDraw) return;
+
     dispatch({
       type: 'cropper/editLineInSidebar',
       meta: { lineId: line.id }
+    })
+  }
+
+  function handleRectClick(rect) {
+    if (state.clickToDraw) return;
+
+    dispatch({
+      type: 'cropper/editRectInSidebar',
+      meta: { rectId: rect.id }
     })
   }
 
@@ -112,8 +126,27 @@ export default function DrawGrid() {
     })
 
     dispatch({
-      type: 'cropper/startDrawing',
+      type: 'cropper/startDrawingLine',
       meta: { lineId }
+    })
+  }
+
+  function createRect(startX, startY) {
+    let rectId = cuid()
+
+    dispatch({
+      type: 'cropper/createRect',
+      meta: { rectId },
+      payload: {
+        id: rectId,
+        points: [[Math.round(startX / state.scale), Math.round(startY / state.scale)]],
+        added: Date.now()
+      }
+    })
+
+    dispatch({
+      type: 'cropper/startDrawingRect',
+      meta: { rectId }
     })
   }
 
@@ -128,15 +161,32 @@ export default function DrawGrid() {
         ]
       })
     }
+
+    if (state.drawingRectId) {
+      dispatch({
+        type: 'cropper/setRectFinish',
+        meta: { rectId: state.drawingRectId },
+        payload: [
+          Math.round(e.evt.offsetX / state.scale),
+          Math.round(e.evt.offsetY / state.scale)
+        ]
+      })
+    }
   }
 
   function handleClick(e) {
     if (state.drawingLineId) {
       finishLine(state.drawingLineId)
       dispatch({type: 'cropper/stopDrawing'})
-    } else if (state.clickToDrawLine) {
+    } else if (state.drawingRectId) {
+      finishRect(state.drawingRectId)
+      dispatch({type: 'cropper/stopDrawing'})
+    } else if (state.clickToDraw === 'line') {
       createLine(e.evt.offsetX, e.evt.offsetY)
-      dispatch({type: 'cropper/setClickToDrawLine', payload: false})
+      dispatch({type: 'cropper/setClickToDraw', payload: null})
+    } else if (state.clickToDraw === 'rect') {
+      createRect(e.evt.offsetX, e.evt.offsetY)
+      dispatch({type: 'cropper/setClickToDraw', payload: null})
     }
   }
 
@@ -188,6 +238,13 @@ export default function DrawGrid() {
     })
   }
 
+  function finishRect(rectId) {
+    dispatch({
+      type: 'cropper/finishRect',
+      meta: { rectId }
+    })
+  }
+
   function nextStep() {
     dispatch(calculateIntersections()).then(() => {
       dispatch({
@@ -202,29 +259,35 @@ export default function DrawGrid() {
       <LeftColumn sticky={true}>
         <div className='background-light-gray p2'>
           <button
-            className='btn btn-small btn-secondary'
-            disabled={state.clickToDrawLine}
-            onClick={() => dispatch({type: 'cropper/setClickToDrawLine', payload: true})}
-          ><u>N</u>ew line</button>
+            className='btn btn-small btn-primary'
+            disabled={state.clickToDraw === 'line'}
+            onClick={() => dispatch({type: 'cropper/setClickToDraw', payload: 'line'})}
+          ><u>L</u>ine</button>
 
           &nbsp;
 
           <button
-            className='btn btn-small btn-secondary'
-            onClick={removeLast}><u>R</u>emove last</button>
+            className='btn btn-small btn-primary'
+            disabled={state.clickToDraw === 'rect'}
+            onClick={() => dispatch({type: 'cropper/setClickToDraw', payload: 'rect'})}
+          ><u>R</u>ect</button>
         </div>
 
         <div className='py2'>
           {
-            state.drawingLineId ?
+            (state.drawingLineId || state.drawingRectId) ?
               <p className='h3 gray'>Drawing...</p> :
               (
-                state.clickToDrawLine ?
-                  <p className='h3 gray'>Click to draw line</p> :
+                state.clickToDraw ?
+                  <p className='h3 gray'>Click to draw {state.clickToDraw}</p> :
                   (
                     state.sidebarLineId && state.lines[state.sidebarLineId] ?
                       <SidebarLine /> :
-                      <SidebarAllLines />
+                      (
+                        state.sidebarRectId && state.rects[state.sidebarRectId] ?
+                          <SidebarRect /> :
+                          <SidebarAll />
+                      )
                   )
               )
           }
@@ -264,8 +327,8 @@ export default function DrawGrid() {
                       stroke={'red'}
                       strokeWidth={2 / state.scale}
                       onClick={() => handleLineClick(line)}
-                      onMouseenter={() => setHoveringLine(true)}
-                      onMouseleave={() => setHoveringLine(false)}
+                      onMouseenter={() => setHoveringObject(true)}
+                      onMouseleave={() => setHoveringObject(false)}
                     />
 
                     <Line
@@ -274,22 +337,31 @@ export default function DrawGrid() {
                       opacity={id === state.sidebarLineId ? 0.3 : 0}
                       strokeWidth={20 / state.scale}
                       onClick={() => handleLineClick(line)}
-                      onMouseenter={() => setHoveringLine(true)}
-                      onMouseleave={() => setHoveringLine(false)}
+                      onMouseenter={() => setHoveringObject(true)}
+                      onMouseleave={() => setHoveringObject(false)}
                     />
                   </Fragment>
                 )
               })}
 
-              {map(state.intersections, ({location}) => {
+              {map(state.rects, (rect, id) => {
+                if (rect.points.length < 2) return null;
+
+                let width = Math.abs(rect.points[0][0] - rect.points[1][0])
+                let height = Math.abs(rect.points[0][1] - rect.points[1][1])
+
                 return (
                   <Rect
-                    x={location[0]}
-                    y={location[1]}
-                    key={`${location[0]},${location[1]}`}
-                    width={5 / state.scale}
-                    height={5 / state.scale}
-                    fill='blue'
+                    key={id}
+                    x={rect.points[0][0]}
+                    y={rect.points[0][1]}
+                    width={width}
+                    height={height}
+                    fill={'red'}
+                    opacity={id === state.sidebarRectId ? 0.8 : 0.5}
+                    onClick={() => handleRectClick(rect)}
+                    onMouseenter={() => setHoveringObject(true)}
+                    onMouseleave={() => setHoveringObject(false)}
                   />
                 )
               })}
@@ -314,7 +386,7 @@ function SidebarLine() {
   function save() {
     dispatch({type: 'cropper/closeSidebar'})
 
-    if (state.wasDrawingLine) {
+    if (state.wasDrawing) {
       dispatch({type: 'cropper/drawAnother'})
     }
   }
@@ -350,7 +422,41 @@ function SidebarLine() {
   )
 }
 
-function SidebarAllLines() {
+function SidebarRect() {
+  const state = useSelector(s => s.cropper)
+  const dispatch = useDispatch()
+  const rect = state.rects[state.sidebarRectId]
+
+
+  function save() {
+    dispatch({type: 'cropper/closeSidebar'})
+  }
+
+  return (
+    <Fragment>
+      <label className='label'>Rect ID</label>
+      <input
+        className='input'
+        readonly
+        disabled
+        type='text'
+        value={rect.id}
+      />
+
+      <button className='btn btn-small btn-primary' onClick={save}>Save</button>
+      <div className='pt2'>
+        <span
+          className='link h6'
+          onClick={() => {
+            dispatch({type: 'cropper/removeRect', payload: rect.id})
+          }}
+        >Delete rect</span>
+      </div>
+    </Fragment>
+  )
+}
+
+function SidebarAll() {
   const state = useSelector(s => s.cropper)
   const dispatch = useDispatch()
 
@@ -361,12 +467,25 @@ function SidebarAllLines() {
     })
   }
 
+  function editRect(id) {
+    dispatch({
+      type: 'cropper/editRectInSidebar',
+      meta: { rectId: id }
+    })
+  }
+
   return (
     <Fragment>
       <h4 className='my0'>Lines</h4>
       <ul>
         {map(state.lines, (line, id) => {
           return <li key={id}><span className='link' onClick={() => editLine(id)}>{line.name || 'Unnamed line'}</span></li>
+        })}
+      </ul>
+      <h4 className='my0'>Rects</h4>
+      <ul>
+        {map(state.rects, (rect, id) => {
+          return <li key={id}><span className='link' onClick={() => editRect(id)}>{rect.id}</span></li>
         })}
       </ul>
     </Fragment>

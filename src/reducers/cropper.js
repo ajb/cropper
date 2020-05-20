@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { map, each, values } from 'lodash'
+import { map, each, values, sortBy } from 'lodash'
 import { intersect } from 'mathjs'
 import { nextNameInSequence, sortAlphabetically } from '../utilities'
 
@@ -11,12 +11,41 @@ const initialState = {
     height: null
   },
   scale: 1,
-  lines: {},
-  intersections: [],
+  lines: {
+    // {
+    //   type: 'line'
+    //   id: lineId,
+    //   points: [[startX, startY], [finishX, finishY]],
+    //   added: Date.now(),
+    //   name: ''
+    // }
+  },
+  rects: {
+    // {
+    //   type: 'rect'
+    //   id
+    //   location
+    //   size
+    // }
+  },
+  intersections: [
+    // {
+    //   type: 'intersection'
+    //   name: 'A1'
+    //   location: [x, y]
+    //   lineIds: ['line-1', 'line-2']
+    //   rectId: 'rect-1',
+    //   review: true/false
+    //   size: ...
+    // }
+  ],
   clickToDrawLine: false,
-  wasDrawingLine: false,
+  clickToDrawRect: false,
+  wasDrawing: null,
   drawingLineId: null,
   sidebarLineId: null,
+  drawingRectId: null,
+  sidebarRectId: null,
   imageReview: {
     reviewingIdx: 0
   }
@@ -27,6 +56,7 @@ const initialState = {
 export function calculateIntersections() {
   return (dispatch, getState) => {
     const allLines = sortAlphabetically(values(getState().cropper.lines).slice(), 'name')
+    const allRects = sortBy(values(getState().cropper.rects).slice(), 'added')
 
     const intersections = []
 
@@ -61,10 +91,28 @@ export function calculateIntersections() {
           res[1] > 0
         ) {
           intersections.push({
+            type: 'intersection',
             location: [Math.round(res[0]), Math.round(res[1])],
             lineIds: [checkingLine.id, otherLine.id]
           })
         }
+      })
+    }
+
+    while(allRects.length) {
+      let rect = allRects.shift()
+      let width = Math.abs(rect.points[0][0] - rect.points[1][0])
+      let height = Math.abs(rect.points[0][1] - rect.points[1][1])
+      let size = Math.max(width, height)
+
+      let x = rect.points[0][0] + (width / 2)
+      let y = rect.points[0][1] + (height / 2)
+
+      intersections.push({
+        type: 'intersection',
+        location: [Math.round(x), Math.round(y)],
+        size: size,
+        rectId: rect.id
       })
     }
 
@@ -91,8 +139,8 @@ export default function cropper(state = initialState, action) {
       case 'cropper/restoreState':
       return action.payload
 
-      case 'cropper/setClickToDrawLine':
-      draft.clickToDrawLine = action.payload
+      case 'cropper/setClickToDraw':
+      draft.clickToDraw = action.payload
       return draft
 
       case 'cropper/setStep':
@@ -100,19 +148,39 @@ export default function cropper(state = initialState, action) {
       return draft
 
       case 'cropper/createLine':
-      draft.lines[action.meta.lineId] = action.payload
+      draft.lines[action.meta.lineId] = {
+        ...action.payload,
+        type: 'line'
+      }
+
+      return draft
+
+      case 'cropper/createRect':
+      draft.rects[action.meta.rectId] = {
+        ...action.payload,
+        type: 'rect'
+      }
       return draft
 
       case 'cropper/removeLine':
       delete draft.lines[action.payload]
       return draft
 
-      case 'cropper/startDrawing':
+      case 'cropper/removeRect':
+      delete draft.rects[action.payload]
+      return draft
+
+      case 'cropper/startDrawingLine':
       draft.drawingLineId = action.meta.lineId
+      return draft
+
+      case 'cropper/startDrawingRect':
+      draft.drawingRectId = action.meta.rectId
       return draft
 
       case 'cropper/stopDrawing':
       draft.drawingLineId = null
+      draft.drawingRectId = null
       return draft
 
       case 'cropper/setIntersections':
@@ -122,6 +190,13 @@ export default function cropper(state = initialState, action) {
       case 'cropper/setLineFinish':
       draft.lines[action.meta.lineId].points = [
         draft.lines[action.meta.lineId].points[0],
+        action.payload
+      ]
+      return draft
+
+      case 'cropper/setRectFinish':
+      draft.rects[action.meta.rectId].points = [
+        draft.rects[action.meta.rectId].points[0],
         action.payload
       ]
       return draft
@@ -141,13 +216,19 @@ export default function cropper(state = initialState, action) {
       // Edit in sidebar:
       draft.sidebarLineId = action.meta.lineId
 
-      // Set "wasDrawingLine" so we can add another
-      draft.wasDrawingLine = true
+      // Set "wasDrawing" so we can add another
+      draft.wasDrawing = 'line'
+      return draft
+
+      case 'cropper/finishRect':
+      // Click to draw another immediately
+
+      draft.clickToDraw = 'rect'
       return draft
 
       case 'cropper/drawAnother':
-      draft.wasDrawingLine = false
-      draft.clickToDrawLine = true
+      draft.wasDrawing = null
+      draft.clickToDraw = state.wasDrawing
       return draft
 
       case 'cropper/loadImage':
@@ -162,8 +243,13 @@ export default function cropper(state = initialState, action) {
       draft.sidebarLineId = action.meta.lineId
       return draft
 
+      case 'cropper/editRectInSidebar':
+      draft.sidebarRectId = action.meta.rectId
+      return draft
+
       case 'cropper/closeSidebar':
       draft.sidebarLineId = null
+      draft.sidebarRectId = null
       return draft
 
       case 'cropper/setLineName':

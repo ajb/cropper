@@ -26,6 +26,10 @@ a.btn-primary {
   cursor: pointer;
 }
 
+.btn-primary[disabled] {
+  background: #0075d9;
+}
+
 .btn-secondary {
   color: #fff;
   background-color: #aaa;
