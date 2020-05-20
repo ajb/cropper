@@ -266,6 +266,15 @@ export default function cropper(state = initialState, action) {
       draft.intersections[draft.imageReview.reviewingIdx].review = action.payload
       return draft
 
+      case 'cropper/handleReviewDrag':
+      draft.intersections[draft.imageReview.reviewingIdx].location[0] =
+        draft.intersections[draft.imageReview.reviewingIdx].location[0] - action.payload[0]
+
+      draft.intersections[draft.imageReview.reviewingIdx].location[1] =
+        draft.intersections[draft.imageReview.reviewingIdx].location[1] - action.payload[1]
+
+      return draft
+
       case 'cropper/reviewChangeSize':
       draft.intersections[draft.imageReview.reviewingIdx].size = parseInt(action.payload, 10)
       return draft

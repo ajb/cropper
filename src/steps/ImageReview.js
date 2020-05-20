@@ -110,6 +110,19 @@ export default function ImageReview() {
     return <NoHolds previousStep={previousStep} />;
   }
 
+  let offsetX = activeIntersection.location[0] - (REVIEW_STAGE_SIZE / 2)
+  let offsetY = activeIntersection.location[1] - (REVIEW_STAGE_SIZE / 2)
+
+  function handleDrag(e) {
+    dispatch({
+      type: 'cropper/handleReviewDrag',
+      payload: [e.target.x(), e.target.y()]
+    })
+
+    e.target.x(0)
+    e.target.y(0)
+  }
+
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
@@ -159,8 +172,10 @@ export default function ImageReview() {
           <Layer>
             <Image
               image={konvaImage}
-              offsetX={activeIntersection.location[0] - (REVIEW_STAGE_SIZE / 2)}
-              offsetY={activeIntersection.location[1] - (REVIEW_STAGE_SIZE / 2)}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              draggable={true}
+              onDragEnd={handleDrag}
             />
 
             <Rect
