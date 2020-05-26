@@ -45,6 +45,10 @@ export default function ImageReview() {
     dispatch({type: 'cropper/reviewNext'})
   }, [dispatch, imageSize])
 
+  const alterSize = useCallback((delta) => {
+    dispatch({type: 'cropper/reviewChangeSize', payload: imageSize + delta})
+  }, [imageSize, dispatch])
+
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.target.nodeName === 'INPUT') return;
@@ -52,13 +56,13 @@ export default function ImageReview() {
 
       if (e.code === 'KeyH') logHold();
       if (e.code === 'KeyN') logNotHold();
-      if (e.code === 'KeyF') incrementSize();
-      if (e.code === 'KeyC') decrementSize();
+      if (e.code === 'KeyF') alterSize(5);
+      if (e.code === 'KeyC') alterSize(-5);
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => { document.removeEventListener('keydown', handleKeyPress) }
-  }, [logHold, logNotHold])
+  }, [logHold, logNotHold, alterSize])
 
   function previousStep() {
     if (!window.confirm('Are you sure? You will lose your data from this review step.')) return;
@@ -123,18 +127,6 @@ export default function ImageReview() {
     e.target.y(0)
   }
 
-  function incrementSize() {
-    alterSize(5)
-  }
-
-  function decrementSize() {
-    alterSize(-5)
-  }
-
-  function alterSize(delta) {
-    dispatch({type: 'cropper/reviewChangeSize', payload: imageSize + delta})
-  }
-
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
@@ -165,11 +157,11 @@ export default function ImageReview() {
             />
 
             <button
-              onClick={decrementSize}
+              onClick={() => alterSize(-5)}
               className='btn btn-small btn-secondary'>-</button>
             &nbsp;
               <button
-              onClick={incrementSize}
+              onClick={() => alterSize(5)}
               className='btn btn-small btn-secondary'>+</button>
           </div>
 
