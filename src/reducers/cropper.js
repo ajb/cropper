@@ -39,8 +39,7 @@ const initialState = {
     //   size: ...
     // }
   ],
-  clickToDrawLine: false,
-  clickToDrawRect: false,
+  clickToDraw: null,
   wasDrawing: null,
   drawingLineId: null,
   sidebarLineId: null,

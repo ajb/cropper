@@ -94,7 +94,7 @@ export default function DrawGrid() {
   }
 
   function handleLineClick(line) {
-    if (state.clickToDraw) return;
+    if (state.clickToDraw || state.drawingRectId || state.drawingLineId) return;
 
     dispatch({
       type: 'cropper/editLineInSidebar',
@@ -103,7 +103,7 @@ export default function DrawGrid() {
   }
 
   function handleRectClick(rect) {
-    if (state.clickToDraw) return;
+    if (state.clickToDraw || state.drawingRectId || state.drawingLineId) return;
 
     dispatch({
       type: 'cropper/editRectInSidebar',
