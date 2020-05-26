@@ -494,13 +494,13 @@ function SidebarAll() {
       <h4 className='my0'>Lines</h4>
       <ul>
         {map(state.lines, (line, id) => {
-          return <li key={id}><span className='link' onClick={() => editLine(id)}>{line.name || 'Unnamed line'}</span></li>
+          return <li key={id}><span className='link' onClick={() => editLine(id)}>{line.name || line.id}</span></li>
         })}
       </ul>
       <h4 className='my0'>Rects</h4>
       <ul>
         {map(state.rects, (rect, id) => {
-          return <li key={id}><span className='link' onClick={() => editRect(id)}>{rect.id}</span></li>
+          return <li key={id}><span className='link' onClick={() => editRect(id)}>{rect.name || rect.id}</span></li>
         })}
       </ul>
     </Fragment>
