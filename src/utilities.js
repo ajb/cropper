@@ -31,10 +31,13 @@ export function nextNameInSequence(type, allNames) {
       return 'A'
     }
   } else if (type === 'numeric') {
-    let allNumericNames = filter(allNames, (name) => name.match(/^[0-9]+$/)).sort().reverse()
+    let allNumericNames = map(
+      filter(allNames, (name) => name.match(/^[0-9]+$/)),
+      (name) => parseInt(name, 10)
+    )
 
     if (allNumericNames.length) {
-      return (parseInt(allNumericNames[0], 10) + 1).toString()
+      return (Math.max(...allNumericNames) + 1).toString()
     } else {
       return '1'
     }
