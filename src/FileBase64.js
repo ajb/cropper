@@ -48,6 +48,6 @@ export default function FileBase64 ({accept, maxSize, multiple, onDone, id, clas
 }
 
 FileBase64.defaultProps = {
-  accept: '.png',
+  accept: '.png,.jpg',
   maxSize: 500000
 }

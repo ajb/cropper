@@ -7,7 +7,6 @@ export default function UploadImage() {
 
   return (
     <FileBase64
-      accept=''
       maxSize={5000000}
       multiple={false}
       onDone={(processed, rejected, e) => {
