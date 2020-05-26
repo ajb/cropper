@@ -6,8 +6,9 @@ import cuid from 'cuid'
 import { map, flatten } from 'lodash'
 import { FlexContainer, LeftColumn, RightColumn } from '../layout'
 import { calculateIntersections } from '../reducers/cropper'
+import { rectPointsToDisplay } from '../utilities'
 
-export default function DrawGrid() {
+export default function DrawGrid({clearLocalstorage}) {
   const state = useSelector(s => s.cropper)
   const [hoveringObject, setHoveringObject] = useState(false)
   const dispatch = useDispatch()
@@ -254,6 +255,11 @@ export default function DrawGrid() {
     })
   }
 
+  function startOver() {
+    clearLocalstorage()
+    window.location.reload()
+  }
+
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
@@ -297,7 +303,7 @@ export default function DrawGrid() {
           <button className='btn btn-primary' onClick={nextStep}>Next step</button>
 
           <div className='h6 pt1'>
-            <span className='link' onClick={() => window.location.reload()}>or start over</span>
+            <span className='link' onClick={startOver}>or start over</span>
           </div>
         </div>
       </LeftColumn>
@@ -347,14 +353,13 @@ export default function DrawGrid() {
               {map(state.rects, (rect, id) => {
                 if (rect.points.length < 2) return null;
 
-                let width = Math.abs(rect.points[0][0] - rect.points[1][0])
-                let height = Math.abs(rect.points[0][1] - rect.points[1][1])
+                let { x, y, width, height } = rectPointsToDisplay(rect.points)
 
                 return (
                   <Rect
                     key={id}
-                    x={rect.points[0][0]}
-                    y={rect.points[0][1]}
+                    x={x}
+                    y={y}
                     width={width}
                     height={height}
                     fill={'red'}

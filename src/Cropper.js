@@ -29,11 +29,16 @@ export default function Cropper() {
     })
   }, [])
 
+  const clearLocalstorage = () => {
+    if (!localstorageKey) return;
+    localStorage.removeItem(localstorageKey)
+  }
+
   // Render steps
   return (
     <div className='p2'>
       {state.step === 'uploadImage' && <UploadImage />}
-      {state.step === 'drawGrid' && <DrawGrid />}
+      {state.step === 'drawGrid' && <DrawGrid clearLocalstorage={clearLocalstorage} />}
       {state.step === 'imageReview' && <ImageReview />}
     </div>
   )

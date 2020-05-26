@@ -61,3 +61,12 @@ export function sortAlphabetically(arr, iteratee) {
     )
   })
 }
+
+export function rectPointsToDisplay(points) {
+  return {
+    width: Math.abs(points[0][0] - points[1][0]),
+    height: Math.abs(points[0][1] - points[1][1]),
+    x: Math.min(points[0][0], points[1][0]),
+    y: Math.min(points[0][1], points[1][1])
+  }
+}

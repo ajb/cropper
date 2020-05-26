@@ -1,7 +1,7 @@
 import { produce } from 'immer'
 import { map, each, values, sortBy } from 'lodash'
 import { intersect } from 'mathjs'
-import { nextNameInSequence, sortAlphabetically } from '../utilities'
+import { nextNameInSequence, sortAlphabetically, rectPointsToDisplay } from '../utilities'
 
 const initialState = {
   step: 'uploadImage', // drawGrid, imageReview, etc...
@@ -100,12 +100,15 @@ export function calculateIntersections() {
 
     while(allRects.length) {
       let rect = allRects.shift()
-      let width = Math.abs(rect.points[0][0] - rect.points[1][0])
-      let height = Math.abs(rect.points[0][1] - rect.points[1][1])
+
+
+      let { width, height, x, y } = rectPointsToDisplay(rect.points)
+
       let size = Math.max(width, height)
 
-      let x = rect.points[0][0] + (width / 2)
-      let y = rect.points[0][1] + (height / 2)
+      // move the x,y coordinates from top-left to middle of shape
+      x = x + (width / 2)
+      y = y + (height / 2)
 
       intersections.push({
         type: 'intersection',
