@@ -47,13 +47,13 @@ export default function ImageReview() {
 
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.code === 'KeyH') {
-        logHold()
-      }
+      if (e.target.nodeName === 'INPUT') return;
+      if (e.metaKey) return;
 
-      if (e.code === 'KeyN') {
-        logNotHold()
-      }
+      if (e.code === 'KeyH') logHold();
+      if (e.code === 'KeyN') logNotHold();
+      if (e.code === 'KeyF') incrementSize();
+      if (e.code === 'KeyC') decrementSize();
     }
 
     document.addEventListener('keydown', handleKeyPress)
@@ -123,23 +123,39 @@ export default function ImageReview() {
     e.target.y(0)
   }
 
+  function incrementSize() {
+    alterSize(5)
+  }
+
+  function decrementSize() {
+    alterSize(-5)
+  }
+
+  function alterSize(delta) {
+    dispatch({type: 'cropper/reviewChangeSize', payload: imageSize + delta})
+  }
+
   return (
     <FlexContainer>
       <LeftColumn sticky={true}>
         <div>
-          <span className='link' onClick={() => dispatch({type: 'cropper/reviewPrevious'})}>Prev</span>
+          <span className='link' onClick={() => dispatch({type: 'cropper/reviewPrevious'})}>&larr; Prev</span>
           &nbsp;
-          <span className='link' onClick={() => dispatch({type: 'cropper/reviewNext'})}>Next</span>
+          <span className='link' onClick={() => dispatch({type: 'cropper/reviewNext'})}>Next &rarr;</span>
         </div>
 
-        Reviewing {imageReviewState.reviewingIdx + 1} of {state.intersections.length}
+        <h4>Reviewing image {imageReviewState.reviewingIdx + 1} of {state.intersections.length}</h4>
 
-        <div>
-          <button onClick={logHold}><u>H</u>old</button>
-          <button onClick={logNotHold}><u>N</u>ot hold</button>
+        <div className='background-light-gray p2'>
+          <button className='btn btn-small btn-primary' onClick={logHold}><u>H</u>old</button>
+          &nbsp;
+          <button className='btn btn-small btn-secondary' onClick={logNotHold}><u>N</u>ot hold</button>
+        </div>
 
-          <div>
-            <label>Size</label>
+        <div className='py2'>
+          <label className='label'>Size</label>
+          <div className='pb1'>
+            <div>{imageSize}</div>
             <input
               type='range'
               min={0}
@@ -147,20 +163,34 @@ export default function ImageReview() {
               value={imageSize}
               onChange={(e) => dispatch({type: 'cropper/reviewChangeSize', payload: e.target.value})}
             />
+
+            <button
+              onClick={decrementSize}
+              className='btn btn-small btn-secondary'>-</button>
+            &nbsp;
+              <button
+              onClick={incrementSize}
+              className='btn btn-small btn-secondary'>+</button>
+          </div>
+
+          <label className='label'>Location</label>
+          <div className='pb1'>[{activeIntersection.location.join(',')}]</div>
+
+          <label className='label'>Name</label>
+          <div className='pb1'>{getIntersectionName(state.lines, state.rects, activeIntersection)}</div>
+
+          <label className='label'>Set as</label>
+          <div className='pb1'>{activeIntersection.review ? 'Hold' : 'Not hold'}</div>
+        </div>
+
+        <div className='background-light-gray p2'>
+          <button className='btn btn-primary' onClick={finish}>Finish and download .zip</button>
+
+          <div className='h6 pt1'>
+            <span className='link' onClick={previousStep}>or go back</span>
           </div>
         </div>
 
-        <div>
-          <div>Location: [{activeIntersection.location.join(',')}]</div>
-          <div>Name: {getIntersectionName(state.lines, state.rects, activeIntersection)}</div>
-          <div>Set as: {activeIntersection.review ? 'Hold' : 'Not hold'}</div>
-          <div>Size: {imageSize}</div>
-        </div>
-
-        <div className='pt4'>
-          <button onClick={previousStep}>Back</button>
-          <button onClick={finish}>Finish</button>
-        </div>
       </LeftColumn>
       <RightColumn>
         <div id='hiddenStageContainer' style={{display: 'none'}} />
