@@ -12,7 +12,7 @@
     "cra-template": "1.0.3",
     "cuid": "^2.1.8",
     "file-saver": "^2.0.2",
-    "immer": "^6.0.5",
+    "immer": "^8.0.1",
     "jszip": "^3.4.0",
     "konva": "^6.0.0",
     "lodash": "^4.17.15",
